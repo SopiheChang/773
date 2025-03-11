@@ -6,7 +6,8 @@ from flask import Flask, request, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
-from linebot.v3.messaging.models import FlexMessage, BubbleContainer
+from linebot.v3.messaging import MessagingApi, ReplyMessageRequest
+from linebot.v3.messaging.models import FlexMessage
 
 app = Flask(__name__)
 
@@ -87,7 +88,7 @@ def handle_message(event):
         # 发送 Flex Message
         reply_request = ReplyMessageRequest(
             reply_token=event.reply_token,
-            messages=[FlexSendMessage(alt_text="計算結果", contents=flex_message)]
+            messages=[flex_message]
         )
         messaging_api.reply_message(reply_request)
 
@@ -99,7 +100,7 @@ def handle_message(event):
         )
         
 def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
-    flex_content = {
+    flex_message = {
         "type": "bubble",
         "body": {
             "type": "box",
@@ -116,7 +117,7 @@ def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
         }
     }
 
-    return BubbleContainer.from_json_dict(flex_content)  # ✅ 确保 BubbleContainer 正确调用
+    return FlexMessage(alt_text="計算結果", contents=flex_message)  # ✅ 新版的 FlexMessage
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

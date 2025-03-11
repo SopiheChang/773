@@ -47,7 +47,7 @@ def handle_message(event):
         # 解析日期并计算天数差
         input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
         today = datetime.date.today()
-        day_diff = (today - input_date).days
+        day_diff = (today - input_date +27).days
 
         # 找到最接近的预设数值
         nearest_days = find_nearest_days(day_diff)

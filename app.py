@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
+from linebot.v3.messaging import FlexSendMessage, BubbleContainer
 
 app = Flask(__name__)
 
@@ -32,17 +33,16 @@ def read_excel_data():
     
     df = pd.read_excel("data.xlsx")
     data_dict = {}
-    
+
     for _, row in df.iterrows():
-        key = row[0]  # Excel 第一列
-        value = row[1]  # Excel 第二列
+        key = row.iloc[0]  # 读取第一列
+        value = row.iloc[1]  # 读取第二列
         if key in data_dict:
-            data_dict[key].append((row[0], row[1]))  # 儲存多筆資料
+            data_dict[key].append((row.iloc[0], row.iloc[1]))  
         else:
-            data_dict[key] = [(row[0], row[1])]
+            data_dict[key] = [(row.iloc[0], row.iloc[1])]
     
     return data_dict
-
 
 def find_nearest_days(day_diff):
     return max([d for d in PRESET_DAYS if d <= day_diff], default=PRESET_DAYS[0])
@@ -70,7 +70,7 @@ def handle_message(event):
         # 解析日期並計算天數差
         input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
         today = datetime.date.today()
-        day_diff = (today - input_date +27).days
+        day_diff = (today - input_date ).days + 27
 
         # 找到最接近的預設數值
         nearest_days = find_nearest_days(day_diff)
@@ -89,7 +89,7 @@ def handle_message(event):
             reply_token=event.reply_token,
             messages=[FlexSendMessage(alt_text="計算結果", contents=flex_message)]
         )
-        messaging_api.reply_message(reply_request)
+        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
 
     except ValueError:
         # 如果輸入不是正確的日期格式，則返回提示消息
@@ -97,10 +97,10 @@ def handle_message(event):
             reply_token=event.reply_token,
             messages=[TextMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）")]
         )
-        messaging_api.reply_message(reply_request)
+        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
         
 def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
-    return {
+    bubble = BubbleContainer.from_json_dict({
         "type": "bubble",
         "body": {
             "type": "box",
@@ -115,7 +115,8 @@ def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
                 {"type": "text", "text": extra_text if extra_text else "🔍 无额外说明", "size": "md", "wrap": True, "color": "#008000"}
             ]
         }
-    }
-
+    })
+    return FlexSendMessage(alt_text="計算結果", contents=bubble)
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

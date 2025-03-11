@@ -14,6 +14,13 @@ def home():
     return "Hello, this is my LINE Bot!"
 
 @app.route("/webhook", methods=["POST"])  # 处理 LINE Webhook
+
+PRESET_DAYS = [120, 130, 140]
+
+def find_nearest_days(day_diff):
+    """找到不大于 day_diff 的最接近的值"""
+    return max([d for d in PRESET_DAYS if d <= day_diff], default=PRESET_DAYS[0])
+    
 def webhook():
     data = request.json
     print("Received webhook data:", data)  # 记录日志，方便调试

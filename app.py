@@ -8,8 +8,8 @@ import datetime
 app = Flask(__name__)
 
 # 你的 LINE Bot 频道 Token & Secret（替换成你自己的）
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("e/tTdFZoZBNOYfiPmlnXkFnas2kRFHKE9Nc4/bAAT5gQVGbCw6fvj8vR0eOY6+tPLmdVBHhVHGm0+6jhbvojPOGZk9T1xBG++PQu2K9/5VktZOnkaasFzZ8mNh1D5mHDyp8b2hljWeZBvmszgRoFcwdB04t89/1O/w1cDnyilFU=")
-LINE_CHANNEL_SECRET = os.getenv("a0fccc2b0ad0de181a3a41535f069ae2")
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)

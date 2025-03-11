@@ -63,7 +63,29 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="❌ 请输入正确的日期格式（YYYYMMDD）"))
 
 def generate_flex_message(user_date, day_diff, nearest_days):
-    """生成 Flex Message JSON"""
+    """生成 Flex Message JSON，包含额外说明"""
+
+    # 预设匹配值的额外说明
+    EXTRA_DESCRIPTIONS = {
+        27: "🐷 小猪刚入栏，注意适应期。",
+        38: "📊 进入生长期，调整饲料配方。",
+        45: "🔬 需观察生长情况，是否健康。",
+        56: "🛠 可能需要做疫苗加强。",
+        69: "💡 进入快速增重期。",
+        76: "📈 适量增加饲料供给。",
+        95: "📅 可开始初步估算市场价格。",
+        112: "🏡 准备进入育肥期。",
+        120: "🐖 可考虑分栏管理。",
+        130: "💰 可开始评估出栏定价。",
+        140: "📦 可能进入预售阶段。",
+        150: "🚛 预计出栏运输安排。",
+        156: "📌 需联系买家确认交付。",
+        167: "📝 统计育肥数据，优化流程。",
+    }
+
+    # 获取匹配值的额外说明（如果没有则为空）
+    extra_text = EXTRA_DESCRIPTIONS.get(nearest_days, "🔍 无额外说明")
+
     return {
         "type": "bubble",
         "body": {
@@ -74,7 +96,9 @@ def generate_flex_message(user_date, day_diff, nearest_days):
                 {"type": "text", "text": f"{user_date}", "size": "lg", "color": "#00bfff"},
                 {"type": "separator"},
                 {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
-                {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"}
+                {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"},
+                {"type": "separator"},
+                {"type": "text", "text": extra_text, "size": "md", "wrap": True, "color": "#008000"}
             ]
         }
     }

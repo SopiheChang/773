@@ -75,8 +75,11 @@ def handle_message(event):
         # 從 Excel 獲取數據
         extra_text = get_excel_data(nearest_days)
 
-        # 生成 Flex Message
-        flex_message = generate_flex_message(user_input, day_diff, nearest_days, extra_text)
+        # **正確建立 Flex Message**
+        flex_message = FlexSendMessage(
+            alt_text="計算結果",
+            contents=generate_flex_message(user_input, day_diff, nearest_days, extra_text)
+        )
 
         # **新增可複製的文字**
         text_message = TextSendMessage(text=f"📅 日期: {user_input}\n"

@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
-from linebot.v3.messaging import MessagingApi, ReplyMessageRequest, FlexMessage
+from linebot.v3.messaging.models import FlexMessage, BubbleContainer
 
 app = Flask(__name__)
 
@@ -87,10 +87,9 @@ def handle_message(event):
         # 发送 Flex Message
         reply_request = ReplyMessageRequest(
             reply_token=event.reply_token,
-            messages=[FlexSendMessage(alt_text="計算結果", contents=generate_flex_message(user_input, day_diff, nearest_days, extra_text))]
+            messages=[FlexSendMessage(alt_text="計算結果", contents=flex_message)]
         )
         messaging_api.reply_message(reply_request)
-        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
 
     except ValueError:
         # 如果輸入不是正確的日期格式，則返回提示消息
@@ -98,10 +97,9 @@ def handle_message(event):
             reply_token=event.reply_token,
             messages=[TextMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）")]
         )
-        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
         
 def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
-    bubble = BubbleContainer.from_json_dict({
+    flex_content = {
         "type": "bubble",
         "body": {
             "type": "box",
@@ -116,8 +114,9 @@ def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
                 {"type": "text", "text": extra_text if extra_text else "🔍 无额外说明", "size": "md", "wrap": True, "color": "#008000"}
             ]
         }
-    })
-    return FlexSendMessage(alt_text="計算結果", contents=bubble)
+    }
+
+    return BubbleContainer.from_json_dict(flex_content)  # ✅ 确保 BubbleContainer 正确调用
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

@@ -8,6 +8,8 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
 from linebot.v3.messaging import MessagingApi, ReplyMessageRequest
 from linebot.v3.messaging.models import FlexMessage
+from linebot.v3 import Configuration, ApiClient  # ✅ 确保导入 Configuration 和 ApiClient
+
 
 app = Flask(__name__)
 

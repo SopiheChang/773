@@ -6,7 +6,7 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
 from linebot.v3.messaging import Configuration, MessagingApi  # ✅ 正确导入
-from linebot.v3.http_client import ApiClient  # ✅ 确保正确导入
+from linebot.v3 import ApiClient  # ✅ 关键修正
 
 import os
 
@@ -15,9 +15,9 @@ app = Flask(__name__)
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 
-configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)  # ✅ 改正
-api_client = ApiClient(configuration)  # ✅ 改正
-messaging_api = MessagingApi(api_client)  # ✅ 改正
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)  # ✅ 关键修正
+api_client = ApiClient(configuration)  # ✅ 关键修正
+messaging_api = MessagingApi(api_client)  # ✅ 关键修正
 
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)

@@ -40,7 +40,7 @@ def webhook():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    """处理收到的文本消息"""
+    """處裡收到的文本消息"""
     user_input = event.message.text.strip()
 
     try:
@@ -56,18 +56,18 @@ def handle_message(event):
         flex_message = generate_flex_message(user_input, day_diff, nearest_days)
 
         # 发送 Flex Message
-        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="计算结果", contents=flex_message))
+        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
 
     except ValueError:
         # 如果输入不是正确的日期格式，则返回提示消息
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="❌ 请输入正确的日期格式（YYYYMMDD）"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）"))
 
 def generate_flex_message(user_date, day_diff, nearest_days):
     """生成 Flex Message JSON，包含额外说明"""
 
     # 预设匹配值的额外说明
     EXTRA_DESCRIPTIONS = {
-        27: "🐷 小猪刚入栏，注意适应期。",
+        27: "🐷 百鮮明:2  乳多酸:3  百敵:10  氧化鋅:3  免疫強:1  包覆維生素C:1  加倍大:0.7  富利汀:1.5  維克贊:8  泰萬:3。",
         38: "📊 进入生长期，调整饲料配方。",
         45: "🔬 需观察生长情况，是否健康。",
         56: "🛠 可能需要做疫苗加强。",
@@ -80,7 +80,7 @@ def generate_flex_message(user_date, day_diff, nearest_days):
         140: "📦 可能进入预售阶段。",
         150: "🚛 预计出栏运输安排。",
         156: "📌 需联系买家确认交付。",
-        167: "📝 统计育肥数据，优化流程。",
+        167: "📝 三百旺:2  賜百寧:1  舒康泰:3  清氨:0.3 泰妙靈20%:0.5。",
     }
 
     # 获取匹配值的额外说明（如果没有则为空）
@@ -92,11 +92,11 @@ def generate_flex_message(user_date, day_diff, nearest_days):
             "type": "box",
             "layout": "vertical",
             "contents": [
-                {"type": "text", "text": "📅 你输入的日期：", "weight": "bold", "size": "md"},
+                {"type": "text", "text": "📅 您輸入的日期：", "weight": "bold", "size": "md"},
                 {"type": "text", "text": f"{user_date}", "size": "lg", "color": "#00bfff"},
                 {"type": "separator"},
                 {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
-                {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"},
+                {"type": "text", "text": f"🎯 對應：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"},
                 {"type": "separator"},
                 {"type": "text", "text": extra_text, "size": "md", "wrap": True, "color": "#008000"}
             ]

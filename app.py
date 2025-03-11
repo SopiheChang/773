@@ -25,12 +25,24 @@ def download_excel():
         file.write(response.content)
 
 def read_excel_data():
-    """读取 Excel 并转换为字典格式"""
-    df = pd.read_excel("data.xlsx", header=0)
-    data = {}
-    for col in df.columns[1:]:  # 跳过第一列（名称列）
-        data[col] = df[[df.columns[0], col]].dropna().to_dict(orient='records')
-    return data
+    url = "https://raw.githubusercontent.com/SopiheChang/773/main/data.xlsx"
+    response = requests.get(url)
+    with open("data.xlsx", "wb") as file:
+        file.write(response.content)
+    
+    df = pd.read_excel("data.xlsx")
+    data_dict = {}
+    
+    for _, row in df.iterrows():
+        key = row[0]  # Excel 第一列
+        value = row[1]  # Excel 第二列
+        if key in data_dict:
+            data_dict[key].append((row[0], row[1]))  # 儲存多筆資料
+        else:
+            data_dict[key] = [(row[0], row[1])]
+    
+    return data_dict
+
 
 def find_nearest_days(day_diff):
     return max([d for d in PRESET_DAYS if d <= day_diff], default=PRESET_DAYS[0])
@@ -51,22 +63,42 @@ def webhook():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    """處理收到的文本消息"""
     user_input = event.message.text.strip()
+
     try:
+        # 解析日期並計算天數差
         input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
         today = datetime.date.today()
-        day_diff = (today - input_date).days
-        nearest_days = find_nearest_days(day_diff)
-        
-        download_excel()
-        excel_data = read_excel_data()
-        extra_text = "\n".join([f"{row[df.columns[0]]}: {row[nearest_days]}" for row in excel_data.get(nearest_days, [])])
-        
-        flex_message = generate_flex_message(user_input, day_diff, nearest_days, extra_text)
-        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
-    except ValueError:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）"))
+        day_diff = (today - input_date +27).days
 
+        # 找到最接近的預設數值
+        nearest_days = find_nearest_days(day_diff)
+
+        # 從 Excel 讀取數據（確保這部分代碼存在）
+        excel_data = read_excel_data()
+
+        # 獲取額外資訊
+        extra_text = "\n".join([f"{row[0]}: {row[1]}" for row in excel_data.get(nearest_days, [])])
+
+        # 生成 Flex Message
+        flex_message = generate_flex_message(user_input, day_diff, nearest_days, extra_text)
+
+        # 发送 Flex Message
+        reply_request = ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=[FlexSendMessage(alt_text="計算結果", contents=flex_message)]
+        )
+        messaging_api.reply_message(reply_request)
+
+    except ValueError:
+        # 如果輸入不是正確的日期格式，則返回提示消息
+        reply_request = ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=[TextMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）")]
+        )
+        messaging_api.reply_message(reply_request)
+        
 def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
     return {
         "type": "bubble",

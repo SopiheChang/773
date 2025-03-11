@@ -1,24 +1,38 @@
+import os
+import datetime
+import pandas as pd
+import requests
 from flask import Flask, request, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
-import os
-import datetime
 
 app = Flask(__name__)
 
-# 你的 LINE Bot 频道 Token & Secret（替换成你自己的）
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
+GITHUB_FILE_URL = "https://raw.githubusercontent.com/SopiheChang/773/main/data.xlsx"
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-# 预设的天数参考值
 PRESET_DAYS = [27, 38, 45, 56, 69, 76, 95, 112, 120, 130, 140, 150, 156, 167]
 
+def download_excel():
+    """从 GitHub 下载最新的 Excel 文件"""
+    response = requests.get(GITHUB_FILE_URL)
+    with open("data.xlsx", "wb") as file:
+        file.write(response.content)
+
+def read_excel_data():
+    """读取 Excel 并转换为字典格式"""
+    df = pd.read_excel("data.xlsx", header=0)
+    data = {}
+    for col in df.columns[1:]:  # 跳过第一列（名称列）
+        data[col] = df[[df.columns[0], col]].dropna().to_dict(orient='records')
+    return data
+
 def find_nearest_days(day_diff):
-    """找到不大于 day_diff 的最接近的值"""
     return max([d for d in PRESET_DAYS if d <= day_diff], default=PRESET_DAYS[0])
 
 @app.route("/", methods=["GET"])
@@ -27,65 +41,33 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    """处理 LINE Webhook 请求"""
     signature = request.headers["X-Line-Signature"]
     body = request.get_data(as_text=True)
-
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
         return "Invalid signature", 400
-
     return "OK", 200
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    """處裡收到的文本消息"""
     user_input = event.message.text.strip()
-
     try:
-        # 解析日期并计算天数差
         input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
         today = datetime.date.today()
-        day_diff = (today - input_date +27).days
-
-        # 找到最接近的预设数值
+        day_diff = (today - input_date).days
         nearest_days = find_nearest_days(day_diff)
-
-        # 生成 Flex Message
-        flex_message = generate_flex_message(user_input, day_diff, nearest_days)
-
-        # 发送 Flex Message
+        
+        download_excel()
+        excel_data = read_excel_data()
+        extra_text = "\n".join([f"{row[df.columns[0]]}: {row[nearest_days]}" for row in excel_data.get(nearest_days, [])])
+        
+        flex_message = generate_flex_message(user_input, day_diff, nearest_days, extra_text)
         line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
-
     except ValueError:
-        # 如果输入不是正确的日期格式，则返回提示消息
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）"))
 
-def generate_flex_message(user_date, day_diff, nearest_days):
-    """生成 Flex Message JSON，包含额外说明"""
-
-    # 预设匹配值的额外说明
-    EXTRA_DESCRIPTIONS = {
-        27: "🐷 百鮮明:2  乳多酸:3  百敵:10  氧化鋅:3  免疫強:1  包覆維生素C:1  加倍大:0.7  富利汀:1.5  維克贊:8  泰萬:3。",
-        38: "📊 进入生长期，调整饲料配方。",
-        45: "🔬 需观察生长情况，是否健康。",
-        56: "🛠 可能需要做疫苗加强。",
-        69: "💡 进入快速增重期。",
-        76: "📈 适量增加饲料供给。",
-        95: "📅 可开始初步估算市场价格。",
-        112: "🏡 准备进入育肥期。",
-        120: "🐖 可考虑分栏管理。",
-        130: "💰 可开始评估出栏定价。",
-        140: "📦 可能进入预售阶段。",
-        150: "🚛 预计出栏运输安排。",
-        156: "📌 需联系买家确认交付。",
-        167: "📝 三百旺:2  賜百寧:1  舒康泰:3  清氨:0.3 泰妙靈20%:0.5。",
-    }
-
-    # 获取匹配值的额外说明（如果没有则为空）
-    extra_text = EXTRA_DESCRIPTIONS.get(nearest_days, "🔍 无额外说明")
-
+def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
     return {
         "type": "bubble",
         "body": {
@@ -98,7 +80,7 @@ def generate_flex_message(user_date, day_diff, nearest_days):
                 {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
                 {"type": "text", "text": f"🎯 對應：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"},
                 {"type": "separator"},
-                {"type": "text", "text": extra_text, "size": "md", "wrap": True, "color": "#008000"}
+                {"type": "text", "text": extra_text if extra_text else "🔍 无额外说明", "size": "md", "wrap": True, "color": "#008000"}
             ]
         }
     }

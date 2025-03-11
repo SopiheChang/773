@@ -11,6 +11,7 @@ from linebot.v3.messaging.models import FlexMessage
 
 app = Flask(__name__)
 
+messaging_api = MessagingApi(LINE_CHANNEL_ACCESS_TOKEN)  # ✅ 添加这一行
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 GITHUB_FILE_URL = "https://raw.githubusercontent.com/SopiheChang/773/main/data.xlsx"
@@ -71,26 +72,24 @@ def handle_message(event):
         # 解析日期並計算天數差
         input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
         today = datetime.date.today()
-        day_diff = (today - input_date ).days + 27
+        day_diff = (today - input_date).days
 
         # 找到最接近的預設數值
         nearest_days = find_nearest_days(day_diff)
 
-        # 從 Excel 讀取數據（確保這部分代碼存在）
+        # 從 Excel 讀取數據
         excel_data = read_excel_data()
-
-        # 獲取額外資訊
         extra_text = "\n".join([f"{row[0]}: {row[1]}" for row in excel_data.get(nearest_days, [])])
 
         # 生成 Flex Message
         flex_message = generate_flex_message(user_input, day_diff, nearest_days, extra_text)
 
-        # 发送 Flex Message
+        # ✅ 改用 messaging_api 进行回复
         reply_request = ReplyMessageRequest(
             reply_token=event.reply_token,
             messages=[flex_message]
         )
-        messaging_api.reply_message(reply_request)
+        messaging_api.reply_message(reply_request)  # ✅ messaging_api 现在已经定义了
 
     except ValueError:
         # 如果輸入不是正確的日期格式，則返回提示消息
@@ -98,6 +97,7 @@ def handle_message(event):
             reply_token=event.reply_token,
             messages=[TextMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）")]
         )
+        messaging_api.reply_message(reply_request)  # ✅ 这里也要改
         
 def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
     flex_message = {

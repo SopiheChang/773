@@ -31,7 +31,7 @@ def get_excel_data(nearest_days):
         return "🔍 無額外說明"
     
     data = []
-    for i in range(3, 30):  # 第4~38行
+    for i in range(3, 30):  # 第4~30行
         name = df.iloc[i, 1]  # B列名稱
         value = df.iloc[i, df.columns.get_loc(nearest_days)]  # 對應天數的值
         if pd.notna(value):
@@ -80,10 +80,10 @@ def generate_flex_message(user_date, day_diff, nearest_days, extra_text):
             "type": "box",
             "layout": "vertical",
             "contents": [
-                {"type": "text", "text": "📅 您輸入的日期：", "weight": "bold", "size": "md"},
+                {"type": "text", "text": "📅 您輸入的離乳日期：", "weight": "bold", "size": "md"},
                 {"type": "text", "text": f"{user_date}", "size": "lg", "color": "#00bfff"},
                 {"type": "separator"},
-                {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
+                {"type": "text", "text": f"⏳ 日齡 {day_diff} 天", "size": "md"},
                 {"type": "text", "text": f"🎯 對應：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"},
                 {"type": "separator"},
                 {"type": "text", "text": extra_text, "size": "md", "wrap": True, "color": "#008000"}

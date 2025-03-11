@@ -31,7 +31,7 @@ def get_excel_data(nearest_days):
         return "🔍 無額外說明"
     
     data = []
-    for i in range(3, 30):  # 第4~30行
+    for i in range(3, 29):  # 第4~29行
         name = df.iloc[i, 1]  # B列名稱
         value = df.iloc[i, df.columns.get_loc(nearest_days)]  # 對應天數的值
         if pd.notna(value):

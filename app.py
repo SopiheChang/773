@@ -9,6 +9,9 @@ app = Flask(__name__)
 LINE_ACCESS_TOKEN = "你的_CHANNEL_ACCESS_TOKEN"
 
 @app.route("/webhook", methods=["POST"])
+def home():
+    return "Hello, this is my LINE Bot!"
+
 def webhook():
     data = request.get_json()
     if "events" in data:

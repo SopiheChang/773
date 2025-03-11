@@ -1,7 +1,7 @@
 from flask import Flask, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, FlexSendMessage
+from linebot.models import MessageEvent, TextMessage, FlexSendMessage, TextSendMessage
 import os
 import datetime
 import requests
@@ -60,16 +60,33 @@ def webhook():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    """處理收到的文本消息"""
     user_input = event.message.text.strip()
-    
+
     try:
+        # 解析日期並計算天數差
         input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
         today = datetime.date.today()
         day_diff = (today - input_date).days
+
+        # 找到最接近的預設數值
         nearest_days = find_nearest_days(day_diff)
+
+        # 從 Excel 獲取數據
         extra_text = get_excel_data(nearest_days)
+
+        # 生成 Flex Message
         flex_message = generate_flex_message(user_input, day_diff, nearest_days, extra_text)
-        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="計算結果", contents=flex_message))
+
+        # **新增可複製的文字**
+        text_message = TextSendMessage(text=f"📅 日期: {user_input}\n"
+                                            f"⏳ 距今: {day_diff} 天\n"
+                                            f"🎯 對應: {nearest_days} 天\n"
+                                            f"{extra_text}")
+
+        # **同時發送 Flex Message + 可複製的文字**
+        line_bot_api.reply_message(event.reply_token, [flex_message, text_message])
+
     except ValueError:
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="❌ 請輸入正確的日期格式（YYYYMMDD）"))
 

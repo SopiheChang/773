@@ -5,20 +5,20 @@ from flask import Flask, request, jsonify
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
-from linebot.v3.messaging import MessagingApi, ReplyMessageRequest, FlexMessage
-from linebot.v3.http_client import Configuration, ApiClient  # ✅ 正确导入 Configuration 和 ApiClient
+from linebot.v3.messaging import Configuration, MessagingApi  # ✅ 正确导入
+from linebot.v3.http_client import ApiClient  # ✅ 确保正确导入
 
 import os
 
 app = Flask(__name__)
 
-
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
-GITHUB_FILE_URL = "https://raw.githubusercontent.com/SopiheChang/773/main/data.xlsx"
-configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
-api_client = ApiClient(configuration)  # ✅ 确保 api_client 是 `ApiClient` 实例
-messaging_api = MessagingApi(api_client)
+
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)  # ✅ 改正
+api_client = ApiClient(configuration)  # ✅ 改正
+messaging_api = MessagingApi(api_client)  # ✅ 改正
+
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)

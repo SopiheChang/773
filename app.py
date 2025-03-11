@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
+import os
+
 
 app = Flask(__name__)
 
@@ -32,4 +34,5 @@ def reply_to_line(reply_token, message):
     requests.post("https://api.line.me/v2/bot/message/reply", headers=headers, json=body)
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 5000))  # 让 Render 使用它提供的 PORT
+    app.run(host="0.0.0.0", port=port, debug=True)

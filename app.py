@@ -65,22 +65,19 @@ def handle_message(event):
 def generate_flex_message(user_date, day_diff, nearest_days):
     """生成 Flex Message JSON"""
     return {
-        "type": "flex",
-        "altText": "计算结果",
-        "contents": {
-            "type": "bubble",
-            "body": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {"type": "text", "text": "📅 你输入的日期：", "weight": "bold", "size": "md"},
-                    {"type": "text", "text": f"{user_date}", "size": "lg", "color": "#00bfff"},
-                    {"type": "separator"},
-                    {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
-                    {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"}
-                ]
-            }
+        "type": "bubble",
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {"type": "text", "text": "📅 你输入的日期：", "weight": "bold", "size": "md"},
+                {"type": "text", "text": f"{user_date}", "size": "lg", "color": "#00bfff"},
+                {"type": "separator"},
+                {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
+                {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"}
+            ]
         }
     }
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

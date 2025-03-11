@@ -1,106 +1,83 @@
 from flask import Flask, request, jsonify
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, FlexSendMessage
 import os
-import requests
 import datetime
 
 app = Flask(__name__)
 
-PRESET_DAYS = [120, 130, 140]
+# 你的 LINE Bot 频道 Token & Secret（替换成你自己的）
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("e/tTdFZoZBNOYfiPmlnXkFnas2kRFHKE9Nc4/bAAT5gQVGbCw6fvj8vR0eOY6+tPLmdVBHhVHGm0+6jhbvojPOGZk9T1xBG++PQu2K9/5VktZOnkaasFzZ8mNh1D5mHDyp8b2hljWeZBvmszgRoFcwdB04t89/1O/w1cDnyilFU=")
+LINE_CHANNEL_SECRET = os.getenv("a0fccc2b0ad0de181a3a41535f069ae2")
 
-# LINE Channel Access Token（必须在 LINE Developer 取得）
-LINE_ACCESS_TOKEN = "e/tTdFZoZBNOYfiPmlnXkFnas2kRFHKE9Nc4/bAAT5gQVGbCw6fvj8vR0eOY6+tPLmdVBHhVHGm0+6jhbvojPOGZk9T1xBG++PQu2K9/5VktZOnkaasFzZ8mNh1D5mHDyp8b2hljWeZBvmszgRoFcwdB04t89/1O/w1cDnyilFU="
-LINE_REPLY_URL = "https://api.line.me/v2/bot/message/reply"
+line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-@app.route("/")  # 主页
-def home():
-    return "Hello, this is my LINE Bot!"
-
-@app.route("/webhook", methods=["POST"])  # 处理 LINE Webhook
+# 预设的天数参考值
+PRESET_DAYS = [27, 38, 45, 56, 69, 76, 95, 112, 120, 130, 140, 150, 156, 167]
 
 def find_nearest_days(day_diff):
     """找到不大于 day_diff 的最接近的值"""
     return max([d for d in PRESET_DAYS if d <= day_diff], default=PRESET_DAYS[0])
-    
-def webhook():
-    data = request.json
-    print("Received webhook data:", data)  # 记录日志，方便调试
-    
-    # 确保 webhook 事件存在
-    if "events" in data:
-        for event in data["events"]:
-            if event["type"] == "message" and event["message"]["type"] == "text":
-                reply_token = event["replyToken"]  # 获取 Reply Token
-                user_message = event["message"]["text"]  # 获取用户发送的消息
-                reply_message = process_message(user_message)  # 处理消息
-                send_reply(reply_token, reply_message)  # 发送回复
-                
-    return jsonify({"status": "ok"})  # 返回 JSON 响应，避免 LINE 重试请求
 
-def process_message(user_input):
-    """处理用户输入的日期，计算天数并返回 Flex Message"""
+@app.route("/", methods=["GET"])
+def home():
+    return "Hello, this is my LINE Bot!"
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    """处理 LINE Webhook 请求"""
+    signature = request.headers["X-Line-Signature"]
+    body = request.get_data(as_text=True)
+
     try:
-        # 解析用户输入的日期
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        return "Invalid signature", 400
+
+    return "OK", 200
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    """处理收到的文本消息"""
+    user_input = event.message.text.strip()
+
+    try:
+        # 解析日期并计算天数差
         input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
         today = datetime.date.today()
-        day_diff = (today - input_date).days  # 计算天数差
+        day_diff = (today - input_date).days
 
-        # 找到最近的天数匹配
+        # 找到最接近的预设数值
         nearest_days = find_nearest_days(day_diff)
 
-        # 📌 这里是 Flex Message 的 JSON，你可以用 Flex Simulator 调整后替换！
-        flex_message = {
-            "type": "flex",
-            "altText": f"计算结果：{day_diff} 天，匹配 {nearest_days} 天",
-            "contents": {
-                "type": "bubble",
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {"type": "text", "text": f"📅 你输入的日期：{user_input}", "weight": "bold", "size": "lg"},
-                        {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
-                        {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"},
-                        {"type": "text", "text": "👇 点击下方按钮查看更多详情", "size": "sm", "color": "#aaaaaa"}
-                    ]
-                },
-                "footer": {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [
-                        {
-                            "type": "button",
-                            "style": "primary",
-                            "color": "#1DB446",
-                            "action": {
-                                "type": "uri",
-                                "label": "查看详情",
-                                "uri": "https://your-website.com/details"
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-        return flex_message
+        # 生成 Flex Message
+        flex_message = generate_flex_message(user_input, day_diff, nearest_days)
+
+        # 发送 Flex Message
+        line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="计算结果", contents=flex_message))
 
     except ValueError:
-        return {"type": "text", "text": "❌ 请输入正确的日期格式（YYYYMMDD）"}
+        # 如果输入不是正确的日期格式，则返回提示消息
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="❌ 请输入正确的日期格式（YYYYMMDD）"))
 
-def send_reply(reply_token, reply_message):
-    """
-    发送回复给用户
-    """
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {LINE_ACCESS_TOKEN}"
+def generate_flex_message(user_date, day_diff, nearest_days):
+    """生成 Flex Message JSON"""
+    return {
+        "type": "bubble",
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {"type": "text", "text": "📅 你输入的日期：", "weight": "bold", "size": "md"},
+                {"type": "text", "text": f"{user_date}", "size": "lg", "color": "#00bfff"},
+                {"type": "separator"},
+                {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
+                {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"}
+            ]
+        }
     }
-    payload = {
-        "replyToken": reply_token,
-        "messages": [{"type": "text", "text": reply_message}]
-    }
-    response = requests.post(LINE_REPLY_URL, headers=headers, json=payload)
-    print("LINE API Response:", response.json())  # 记录 LINE API 的返回信息
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)

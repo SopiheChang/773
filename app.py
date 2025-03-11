@@ -28,14 +28,55 @@ def webhook():
                 
     return jsonify({"status": "ok"})  # 返回 JSON 响应，避免 LINE 重试请求
 
-def process_message(user_message):
-    """
-    处理用户的消息，并返回 Bot 的回复
-    """
-    if user_message.isdigit():  # 如果是数字，计算天数
-        return f"你输入的数字是 {user_message}，但还没有设定逻辑 😃"
-    else:
-        return f"你说了：{user_message}，Bot 收到了！🚀"
+def process_message(user_input):
+    """处理用户输入的日期，计算天数并返回 Flex Message"""
+    try:
+        # 解析用户输入的日期
+        input_date = datetime.datetime.strptime(user_input, "%Y%m%d").date()
+        today = datetime.date.today()
+        day_diff = (today - input_date).days  # 计算天数差
+
+        # 找到最近的天数匹配
+        nearest_days = find_nearest_days(day_diff)
+
+        # 📌 这里是 Flex Message 的 JSON，你可以用 Flex Simulator 调整后替换！
+        flex_message = {
+            "type": "flex",
+            "altText": f"计算结果：{day_diff} 天，匹配 {nearest_days} 天",
+            "contents": {
+                "type": "bubble",
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": f"📅 你输入的日期：{user_input}", "weight": "bold", "size": "lg"},
+                        {"type": "text", "text": f"⏳ 距今 {day_diff} 天", "size": "md"},
+                        {"type": "text", "text": f"🎯 匹配值：{nearest_days} 天", "weight": "bold", "size": "lg", "color": "#ff5555"},
+                        {"type": "text", "text": "👇 点击下方按钮查看更多详情", "size": "sm", "color": "#aaaaaa"}
+                    ]
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "color": "#1DB446",
+                            "action": {
+                                "type": "uri",
+                                "label": "查看详情",
+                                "uri": "https://your-website.com/details"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        return flex_message
+
+    except ValueError:
+        return {"type": "text", "text": "❌ 请输入正确的日期格式（YYYYMMDD）"}
 
 def send_reply(reply_token, reply_message):
     """

@@ -5,6 +5,8 @@ import datetime
 
 app = Flask(__name__)
 
+PRESET_DAYS = [120, 130, 140]
+
 # LINE Channel Access Token（必须在 LINE Developer 取得）
 LINE_ACCESS_TOKEN = "e/tTdFZoZBNOYfiPmlnXkFnas2kRFHKE9Nc4/bAAT5gQVGbCw6fvj8vR0eOY6+tPLmdVBHhVHGm0+6jhbvojPOGZk9T1xBG++PQu2K9/5VktZOnkaasFzZ8mNh1D5mHDyp8b2hljWeZBvmszgRoFcwdB04t89/1O/w1cDnyilFU="
 LINE_REPLY_URL = "https://api.line.me/v2/bot/message/reply"
@@ -14,8 +16,6 @@ def home():
     return "Hello, this is my LINE Bot!"
 
 @app.route("/webhook", methods=["POST"])  # 处理 LINE Webhook
-
-PRESET_DAYS = [120, 130, 140]
 
 def find_nearest_days(day_diff):
     """找到不大于 day_diff 的最接近的值"""

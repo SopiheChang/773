@@ -81,12 +81,6 @@ def handle_message(event):
             contents=generate_flex_message(user_input, day_diff, nearest_days, extra_text)
         )
 
-        # **新增可複製的文字**
-        text_message = TextSendMessage(text=f"📅 日期: {user_input}\n"
-                                            f"⏳ 距今: {day_diff} 天\n"
-                                            f"🎯 對應: {nearest_days} 天\n"
-                                            f"{extra_text}")
-
         # **同時發送 Flex Message + 可複製的文字**
         line_bot_api.reply_message(event.reply_token, [flex_message, text_message])
 

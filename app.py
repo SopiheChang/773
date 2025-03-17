@@ -80,7 +80,9 @@ def handle_message(event):
             alt_text="計算結果",
             contents=generate_flex_message(user_input, day_diff, nearest_days, extra_text)
         )
-
+        # **新增可複製的文字**
+        text_message = TextSendMessage(text=f"{extra_text}")
+        
         # **同時發送 Flex Message + 可複製的文字**
         line_bot_api.reply_message(event.reply_token, [flex_message, text_message])
 
